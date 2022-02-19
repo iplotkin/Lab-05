@@ -2,7 +2,9 @@
 title: 'Lab 05: Data Wrangling & Regression'
 author: "Isaac Plotkin"
 date: "2/18/2022"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -12,6 +14,7 @@ library(stringr)
 library(knitr)
 library(skimr)
 library(broom)
+library(patchwork)
 ```
 
 ```{r}
@@ -73,8 +76,92 @@ airbnb <- mutate(airbnb, neigh_simp = fct_recode(neighbourhood, "Other" = "City 
 airbnb
 ```
 
+5.
+
+```{r}
+ggplot(data = airbnb, aes(x = minimum_nights)) +
+  geom_bar() +
+  labs("Distribution of Neighbourhood")
+
+min_nights_table <- table(airbnb$minimum_nights)
+min_nights_table
+```
+
+The 4 most common values for minimum_nights are 1, 2, 3, and 30 nights. 30 minimum nights stands out. The most likely intended purpose of 30 minimum nights is to require people to rent the house for at least a month so the landlords do not have to find new renters every week. 
 
 
+```{r}
+airbnb_travel <- airbnb %>%
+  filter(minimum_nights<=3)
+
+airbnb_travel
+```
+
+
+6.
+```{r}
+airbnb_travel <- mutate(airbnb_travel, price_3_nights = 3*price + cleaning_fee)
+
+airbnb_travel
+```
+
+
+7. 
+```{r}
+model <- lm(price_3_nights ~ neigh_simp + number_of_reviews +  reviews_per_month , data = airbnb_travel)
+tidy(model, conf.int = TRUE) %>%
+  kable(format = "markdown", digits=3)
+```
+
+8. The coefficient of number of reviews shows that there is a $0.44	decrease in price_3_nights for every new review.
+The 95% confidence interval shows that there is a 95% chance that the coefficient for number of reviews will be between -0.834 and -0.040 if we repeated the sampling.
+
+
+9.  The coefficient of neigh_simpCity of Santa Cruz shows that there is a $208 decrease in price_3_nights if the airbnb is located in Santa Cruz
+The 95% confidence interval shows that there is a 95% chance that the coefficient for neigh_simpCity of Santa Cruz will be between -356.966	and -59.036 if we repeated the sampling.
+
+
+10. The intercept is the base value for an airbnb located in Capitola with no reviews. This seems like a meaningful interpretation.
+
+
+11. 
+```{r}
+# visit_SC <- data.frame(neigh_simp = "Other", number_of_reviews = 10, reviews_per_month = 5.14)
+predict(model, data.frame(neigh_simp = "Other", number_of_reviews = 10, reviews_per_month = 5.14), interval = "confidence")
+
+```
+
+
+12.
+Linearity
+```{r}
+airbnb_aug <- augment(model)
+glimpse(airbnb_aug)
+
+ggplot(data = airbnb_aug, aes(x = .fitted, y = .resid)) +
+  geom_point(alpha = 0.3) + 
+  geom_hline(yintercept = 0, color = "red") +
+  labs(x = "Predicted", y = "Residuals", 
+       title = "Residuals vs. Predicted")
+```
+
+```{r}
+p1 <- ggplot(data = airbnb_aug, aes(x = neigh_simp, y = .resid)) + 
+  geom_boxplot() + 
+  labs(title = "Residuals vs neigh_simp")
+
+p2 <- ggplot(data = airbnb_aug, aes(x = number_of_reviews, y = .resid)) + 
+  geom_point() + 
+  labs(title = "Residuals vs number_of_reviews")
+
+p3 <- ggplot(data = airbnb_aug, aes(x = reviews_per_month, y = .resid)) + 
+  geom_point() + 
+  labs(title = "Residuals vs reviews_per_month")
+
+p1/(p2+p3)
+```
+
+The model does not pass the linearity assumption therefore I would not be confident on interpreting the results of my model.
 
 
 
