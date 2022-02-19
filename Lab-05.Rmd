@@ -1,0 +1,83 @@
+---
+title: 'Lab 05: Data Wrangling & Regression'
+author: "Isaac Plotkin"
+date: "2/18/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(stringr)
+library(knitr)
+library(skimr)
+library(broom)
+```
+
+```{r}
+airbnb <- read_csv("raw_data/listings.csv")
+```
+
+1. 
+```{r}
+airbnb <- mutate(airbnb, cleaning_fee = 0.02*price)
+airbnb
+```
+
+2. 
+```{r}
+ggplot(data = airbnb, aes(x = cleaning_fee)) +
+  geom_histogram() +
+  labs("Distribution of Cleaning Fee")
+
+```
+
+```{r}
+airbnb %>%
+  summarise(min = min(cleaning_fee), 
+            q1 = quantile(cleaning_fee, 0.25), 
+            q3 = quantile(cleaning_fee, 0.75), 
+            max = max(cleaning_fee), 
+            iqr = IQR(cleaning_fee), 
+            mean = mean(cleaning_fee),
+            median = median(cleaning_fee), 
+            std_dev = sd(cleaning_fee)
+            )
+```
+
+The graph and summary statistics show that cleaning_fee is a right skewed distribution. The mean > median and there is a longer tail on the right side of the distribution.
+
+3. 
+```{r}
+ggplot(data = airbnb, aes(x = neighbourhood)) +
+  geom_bar() +
+  labs("Distribution of Neighbourhood")
+```
+
+```{r}
+common_hoods <- sum(airbnb$neighbourhood == 'City of Capitola' | airbnb$neighbourhood == 'City of Santa Cruz' | airbnb$neighbourhood == 'Unincorporated Areas')
+total_hoods <- nrow(airbnb)
+
+# % of top 3 neighborhoods
+common_hoods/total_hoods
+```
+
+
+There are 5 categories of neighborhood in the dataset. The 3 most common neighborhoods are Capitola, Santa Cruz and Unincorporated Areas. They make up 97.24% of the total neighborhoods.
+
+
+4. 
+```{r}
+airbnb <- mutate(airbnb, neigh_simp = fct_recode(neighbourhood, "Other" = "City of Scotts Valley", "Other" = "City of Watsonville"))
+
+airbnb
+```
+
+
+
+
+
+
+
+
+
